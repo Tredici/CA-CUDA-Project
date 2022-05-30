@@ -1,0 +1,6 @@
+[submodule "First Test/modules/CPP-csv-parser"]
+	path = First Test/modules/CPP-csv-parser
+	url = git@github.com:Tredici/CPP-csv-parser.git
+[submodule "First Test/modules/CPP-math-utils"]
+	path = First Test/modules/CPP-math-utils
+	url = git@github.com:Tredici/CPP-math-utils.git
