@@ -131,7 +131,7 @@ __device__ void calculate_pcc(PCC_Partial* partial, const data_type* v1, const d
     *partial += ans;
 }
 
-__global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length) {
+__global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length, int lines) {
     int limit = COUPLE_NUMBER(length);
     // columns per thread
     auto cpt = limit / blockDim.x + (limit % blockDim.x != 0);
@@ -140,7 +140,7 @@ __global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length) {
         if (threadIdx.x < limit) {
             auto i = threadIdx.x;
             auto couple = ::pair(length, i);
-            calculate_pcc(&partial[i], chunk[couple.first], chunk[couple.second], length);
+            calculate_pcc(&partial[i], chunk[couple.first], chunk[couple.second], lines);
         }
     }
     // else at least one columnt per thread
@@ -150,7 +150,7 @@ __global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length) {
         auto end = MIN(beginning + cpt, limit);
         auto couple = ::pair(length, beginning);
         while (beginning != end) {
-            calculate_pcc(&partial[beginning], chunk[couple.first], chunk[couple.second], length);
+            calculate_pcc(&partial[beginning], chunk[couple.first], chunk[couple.second], lines);
             // next pair
             couple = ::inc(length, couple);
             ++beginning;
@@ -257,7 +257,7 @@ int main(int argc, char const* argv[])
         for (auto& v : chunk.value()) {
             c.push_back(thrust::raw_pointer_cast(&v[0]));
         }
-        evaluate <<< 1, 1 >>> (thrust::raw_pointer_cast(&partial[0]), thrust::raw_pointer_cast(&c[0]), ts_count);
+        evaluate <<< 1, 1 >>> (thrust::raw_pointer_cast(&partial[0]), thrust::raw_pointer_cast(&c[0]), ts_count, chunk.value()[0].size());
     }
 
     auto res = allocate_result_container(ts_count);
