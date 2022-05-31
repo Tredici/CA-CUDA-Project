@@ -171,7 +171,7 @@ __device__ data_type compute(const PCC_Partial& pcc) {
 // calculate results element by element
 __global__ void compute_results(int n, data_type* res, const PCC_Partial* partials) {
     int limit = COUPLE_NUMBER(n);
-    // columns per thread
+    // pairs of columns per thread
     auto cpt = limit / blockDim.x;
     // more thread than items? Might happet if columns are too few
     if (cpt == 0) {
