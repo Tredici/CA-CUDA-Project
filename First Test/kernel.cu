@@ -134,7 +134,7 @@ __device__ void calculate_pcc(PCC_Partial* partial, const data_type* v1, const d
 __global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length) {
     int limit = COUPLE_NUMBER(length);
     // columns per thread
-    auto cpt = limit / blockDim.x;
+    auto cpt = limit / blockDim.x + (limit % blockDim.x != 0);
     // more thread than items? Might happet if columns are too few
     if (cpt == 0) {
         if (threadIdx.x < limit) {
@@ -172,7 +172,7 @@ __device__ data_type compute(const PCC_Partial& pcc) {
 __global__ void compute_results(int n, data_type* res, const PCC_Partial* partials) {
     int limit = COUPLE_NUMBER(n);
     // pairs of columns per thread
-    auto cpt = limit / blockDim.x;
+    auto cpt = limit / blockDim.x + (limit % blockDim.x != 0);
     // more thread than items? Might happet if columns are too few
     if (cpt == 0) {
         auto i = threadIdx.x;
