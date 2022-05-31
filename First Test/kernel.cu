@@ -257,11 +257,11 @@ int main(int argc, char const* argv[])
         for (auto& v : chunk.value()) {
             c.push_back(thrust::raw_pointer_cast(&v[0]));
         }
-        evaluate <<< 1, 1 >>> (thrust::raw_pointer_cast(&partial[0]), thrust::raw_pointer_cast(&c[0]), ts_count, chunk.value()[0].size());
+        evaluate <<< 1, 32 >>> (thrust::raw_pointer_cast(&partial[0]), thrust::raw_pointer_cast(&c[0]), ts_count, chunk.value()[0].size());
     }
-
+    print(partial[0]);
     auto res = allocate_result_container(ts_count);
-    compute_results <<< 1, 1 >>> (ts_count, thrust::raw_pointer_cast(&res[0]), thrust::raw_pointer_cast(&partial[0]));
+    compute_results <<< 1, 32 >>> (ts_count, thrust::raw_pointer_cast(&res[0]), thrust::raw_pointer_cast(&partial[0]));
     thrust::host_vector<data_type> hres(res);
     print_results((int)ts_count, hres);
 
