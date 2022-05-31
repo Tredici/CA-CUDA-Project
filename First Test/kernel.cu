@@ -142,7 +142,7 @@ __global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length) {
     // else at least one columnt per thread
     else {
         // for each pair assigned to this thread
-        auto beginning = cpt * blockDim.x;
+        auto beginning = cpt * threadIdx.x;
         auto end = MIN(beginning + cpt, limit);
         auto couple = ::pair(length, beginning);
         while (beginning != end) {
@@ -172,16 +172,18 @@ __global__ void compute_results(int n, data_type* res, const PCC_Partial* partia
     // more thread than items? Might happet if columns are too few
     if (cpt == 0) {
         auto i = threadIdx.x;
-        res[i] = compute(partials[i]);
+        if (i < limit) {
+            res[i] = compute(partials[i]);
+        }
     }
     // else at least one columnt per thread
     else {
         // for each pair assigned to this thread
-        const auto beginning = cpt * blockDim.x;
+        const auto beginning = cpt * threadIdx.x;
         const auto end = MIN(beginning + cpt, limit);
         // compute final result
         for (int i = beginning; i != end; ++i) {
-            res[i] = compute(partials[i]);
+            res[i] = compute(partials[i])+1;
         }
     }
 }
@@ -224,7 +226,7 @@ int main(int argc, char const* argv[])
 {
     std::size_t chunk_size = 1000;
 
-    std::string input("test-dataset.csv");
+    std::string input("t2.csv");
     std::ifstream fin(input);
     if (!fin.good()) {
         std::cerr << "Failed to open file '" << input << "'\n";
@@ -232,7 +234,7 @@ int main(int argc, char const* argv[])
     }
 
     csv::reader r(fin);
-    auto ts_count = r.column_count();
+    auto ts_count = static_cast<int>(r.column_count());
 
     // since this allocation the map containing
     // the results will never change its size,
