@@ -95,11 +95,15 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 
 // Return a vector that will hold partial results
 auto allocate_partial_container(int ts_count) {
-    return thrust::device_vector<PCC_Partial>(COUPLE_NUMBER(ts_count));
+    thrust::device_vector<PCC_Partial> ans(COUPLE_NUMBER(ts_count));
+    cudaMemset(thrust::raw_pointer_cast(&ans[0]), 0, sizeof(PCC_Partial) * ans.size());
+    return ans;
 }
 
 auto allocate_result_container(int ts_count) {
-    return thrust::device_vector<data_type>(COUPLE_NUMBER(ts_count));
+    thrust::device_vector<data_type> ans(COUPLE_NUMBER(ts_count));
+    cudaMemset(thrust::raw_pointer_cast(&ans[0]), 0, sizeof(data_type) * ans.size());
+    return ans;
 }
 
 __device__ void operator+=(PCC_Partial& p1, const PCC_Partial& p2) {
@@ -113,7 +117,7 @@ __device__ void operator+=(PCC_Partial& p1, const PCC_Partial& p2) {
 
 // comput partial pcc on two time series
 __device__ void calculate_pcc(PCC_Partial* partial, const data_type* v1, const data_type* v2, int length) {
-    PCC_Partial ans;
+    PCC_Partial ans{};
     for (int i{}; i != length; ++i) {
         const auto v_1 = v1[i];
         const auto v_2 = v2[i];
@@ -183,7 +187,7 @@ __global__ void compute_results(int n, data_type* res, const PCC_Partial* partia
         const auto end = MIN(beginning + cpt, limit);
         // compute final result
         for (int i = beginning; i != end; ++i) {
-            res[i] = compute(partials[i])+1;
+            res[i] = compute(partials[i]);
         }
     }
 }
