@@ -77,6 +77,20 @@ __device__ Pair pair(int n, int i) {
     return p2;
 }
 
+// Implement the same op without using recursion
+__device__  Pair fast_pair(const int n, const int p)
+{
+    // closed form formula from: https://stackoverflow.com/questions/21331385/indexing-the-unordered-pairs-of-a-set
+    const int to_square = 2 * n - 1;
+    const int square = to_square * to_square;
+    // floorf
+    //  https://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE
+    const int x = floorf((to_square - sqrt(float(square - 8 * p))) / 2);
+    const int y = p - (2 * n - x - 3) * x / 2 + 1;
+    return Pair{ x, y };
+}
+
+
 __device__ Pair inc(int n, Pair couple) {
     if (++couple.second == n) {
         couple.first += 1;
@@ -133,22 +147,27 @@ __device__ void calculate_pcc(PCC_Partial* partial, const data_type* v1, const d
 
 __global__ void evaluate(PCC_Partial* partial, data_type** chunk, int length, int lines) {
     int limit = COUPLE_NUMBER(length);
+    // to linearize blocks
+    auto id = threadIdx.x + blockDim.x * blockIdx.x;
+    auto poolsz = (gridDim.x ? gridDim.x : 1) * blockDim.x;
     // columns per thread
-    auto cpt = limit / blockDim.x + (limit % blockDim.x != 0);
+    auto cpt = limit / poolsz + (limit % poolsz != 0);
     // more thread than items? Might happet if columns are too few
     if (cpt == 0) {
-        if (threadIdx.x < limit) {
-            auto i = threadIdx.x;
-            auto couple = ::pair(length, i);
+        if (id < limit) {
+            auto i = id;
+            //auto couple = ::pair(length, i);
+            auto couple = ::fast_pair(length, i);
             calculate_pcc(&partial[i], chunk[couple.first], chunk[couple.second], lines);
         }
     }
     // else at least one columnt per thread
     else {
         // for each pair assigned to this thread
-        auto beginning = cpt * threadIdx.x;
+        auto beginning = cpt * id;
         auto end = MIN(beginning + cpt, limit);
-        auto couple = ::pair(length, beginning);
+        //auto couple = ::pair(length, beginning);
+        auto couple = ::fast_pair(length, beginning);
         while (beginning != end) {
             calculate_pcc(&partial[beginning], chunk[couple.first], chunk[couple.second], lines);
             // next pair
