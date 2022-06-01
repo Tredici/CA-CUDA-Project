@@ -275,6 +275,9 @@ int main(int argc, char const* argv[])
     // be performed on its structure
     auto partial = allocate_partial_container(ts_count);
 
+#ifndef NDEBUG
+    std::size_t precessed_rows{};
+#endif
     while (true) {
         auto chunk = get_chunk(r, chunk_size);
         if (!chunk.has_value()) {
@@ -285,11 +288,23 @@ int main(int argc, char const* argv[])
         for (auto& v : chunk.value()) {
             c.push_back(thrust::raw_pointer_cast(&v[0]));
         }
+#ifndef NDEBUG
+        std::cerr << "Processing rows [" << precessed_rows << ',' << (precessed_rows+=chunk.value()[0].size()) << ")...";
+#endif
         evaluate <<< 16, 1024 >>> (thrust::raw_pointer_cast(&partial[0]), thrust::raw_pointer_cast(&c[0]), ts_count, chunk.value()[0].size());
+#ifndef NDEBUG
+        std::cerr << " DONE!\n";
+#endif
     }
     print(partial[0]);
     auto res = allocate_result_container(ts_count);
+#ifndef NDEBUG
+    std::cerr << "Merging results...";
+#endif
     compute_results <<< 16, 1024 >>> (ts_count, thrust::raw_pointer_cast(&res[0]), thrust::raw_pointer_cast(&partial[0]));
+#ifndef NDEBUG
+    std::cerr << " DONE!\n";
+#endif
     thrust::host_vector<data_type> hres(res);
     print_results((int)ts_count, hres);
 
