@@ -244,6 +244,15 @@ std::optional<std::vector<thrust::device_vector<data_type>>> get_chunk(csv::read
     return ans;
 }
 
+void print(const PCC_Partial& pcc) {
+    std::cout
+        << "count:         " << pcc.count << '\n'
+        << "sum_1:         " << pcc.sum_1 << '\n'
+        << "sum_1_squared: " << pcc.sum_1_squared << '\n'
+        << "sum_2:         " << pcc.sum_2 << '\n'
+        << "sum_2_squared: " << pcc.sum_2_squared << '\n'
+        << "sum_prod:      " << pcc.sum_prod << '\n';
+}
 
 int main(int argc, char const* argv[])
 {
