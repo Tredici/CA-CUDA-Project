@@ -220,26 +220,49 @@ void print_results(const int n, const thrust::host_vector<data_type>& hres) {
     }
 }
 
-std::optional<std::vector<thrust::device_vector<data_type>>> get_chunk(csv::reader& r, std::size_t line_count) {
-    std::vector<thrust::host_vector<data_type>> tmp(r.column_count());
-    for (auto& v : tmp) {
-        v.reserve(line_count);
-    }
-    auto counter = line_count;
-    while (r.can_read() && counter--) {
-        auto line = r.getline();
-        for (size_t i = 0; i < line.size(); ++i) {
-            tmp[i].push_back(math::convertions::ston<data_type>(line.data()[i]));
+std::optional<std::vector<thrust::device_vector<data_type>>>& get_chunk(csv::reader& r, std::size_t line_count) {
+    static auto column_count = r.column_count();
+    static std::vector<thrust::host_vector<data_type>> tmp(column_count);
+    // many columns as tmp
+    static auto ans = std::make_optional(std::vector<thrust::device_vector<data_type>>(column_count));
+    static bool first = true;
+    if (first) {
+        // execute once
+        first = false;
+        for (auto& v : tmp) {
+            // allocate space for line count rows on CPU memory
+            v.resize(line_count);
+        }
+        // allocate space for line count rows on GPU memory
+        auto& ans_v = ans.value();
+        for (auto& v : ans_v) {
+            // allocate space for line count rows on CPU memory
+            v.resize(line_count);
         }
     }
-    if (counter == line_count) {
-        return std::nullopt;
+    auto inserted_rows = 0;
+    while (r.can_read() && inserted_rows != line_count) {
+        auto line = r.getline();
+        for (size_t i = 0; i < column_count; ++i) {
+            tmp[i][inserted_rows] = math::convertions::ston<data_type>(line.data()[i]);
+        }
+        ++inserted_rows;
     }
-    // many columns as tmp
-    std::vector<thrust::device_vector<data_type>> ans;
-    ans.reserve(tmp.size());
-    for (const auto& v : tmp) {
-        ans.emplace_back(v);
+    if (inserted_rows == 0) {
+        return ans = std::nullopt;
+    }
+    // if found less rows than expeceted, shrink vector
+    else if (inserted_rows != line_count) {
+        for (auto& v : tmp) {
+            v.resize(inserted_rows);
+        }
+    }
+    // copy data to GPU
+    {
+        auto& ans_v = ans.value();
+        for (decltype(column_count) i{}; i != column_count; ++i) {
+            ans_v[i] = tmp[i];
+        }
     }
     return ans;
 }
