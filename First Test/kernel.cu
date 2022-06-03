@@ -1,6 +1,6 @@
-﻿
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+﻿// Headers included by Visual Studio, unnecessary
+//#include "cuda_runtime.h"
+//#include "device_launch_parameters.h"
 
 #include "modules/CPP-csv-parser/csv.hh"
 #include "modules/CPP-math-utils/convertions.hh"
