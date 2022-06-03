@@ -319,7 +319,7 @@ int main(int argc, char const* argv[])
         std::cerr << " DONE!\n";
 #endif
     }
-    print(partial[0]);
+    //print(partial[0]);
     auto res = allocate_result_container(ts_count);
 #ifndef NDEBUG
     std::cerr << "Merging results...";
